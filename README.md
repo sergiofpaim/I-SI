@@ -1,2 +1,2 @@
-# SI---UFU
+# SI-UFU
 UFU Projects
