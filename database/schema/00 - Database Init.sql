@@ -1,3 +1,32 @@
+CREATE DATABASE bank_exercise;
+USE bank_exercise;
+
+CREATE TABLE account (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    balance DECIMAL(10,2) NOT NULL DEFAULT 0.00
+) ENGINE=InnoDB;
+
+INSERT INTO account(name, balance) VALUES
+  ('Dionisio', 20.0),
+  ('Sergio', 500.0),
+  ('Andre', 200.0),
+  ('Caio', 1000.0),
+  ('Joao Pedro', 1500.0);
+
+SELECT * FROM account;
+
+CREATE TABLE transaction (
+    transaction_id INT AUTO_INCREMENT PRIMARY KEY,
+    sender_id INT NOT NULL,
+    receiver_id INT NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (sender_id, receiver_id, created_at),
+    FOREIGN KEY (sender_id) REFERENCES account(id) ON DELETE CASCADE,
+    FOREIGN KEY (receiver_id) REFERENCES account(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 DELIMITER $$
 
 CREATE PROCEDURE TransferMoney(
