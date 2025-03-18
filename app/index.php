@@ -1,4 +1,4 @@
-<?php 
+<?php
 // configurações de erro
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
@@ -7,42 +7,37 @@ error_reporting(E_ALL);
 // configurações para a conexao com a db
 $host = 'localhost';
 $db = 'bank_exercise';
-$Username = 'db';
-$Password = '12345';
-$conexao = new PDO("mysql:host=$host;dbname=$db;charset=utf8", $Username, $Password);
+$username = 'db';
+$password = '12345';
+$conexao = new PDO("mysql:host=$host;dbname=$db;charset=utf8", $username, $password);
 $conexao->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 // Requisição de autenticação
-if (isset($_POST['username'])&& !empty($_POST['username'])) // Verificando se o campo username foi enviado && Não esta vazio
+if (isset($_POST['username']) && !empty($_POST['username'])) // Verificando se o campo username foi enviado && Não esta vazio
 {
-  //fazendo a autenticação
-  $user = $_POST['username'];
-  $login = "SELECT id FROM account WHERE name = :user ;";
-  try 
-  {
-    $auth = $conexao->prepare($login);
-    $auth->execute(['user' => $user]);
-    $Resp = $auth->fetch(PDO::FETCH_ASSOC);
-    if ($Resp)
-    {
-      $id = $Resp['id'];
-      setcookie('id', $id, time()+3600, "/"); // Cookie do id valido por 1 hora
-    } else {
-      echo "<script>alert('Usuario não encontardo')</script>";
+    //fazendo a autenticação
+    $user = $_POST['username'];
+    $login = "SELECT id FROM account WHERE name = :user ;";
+    try {
+        $auth = $conexao->prepare($login);
+        $auth->execute(['user' => $user]);
+        $Resp = $auth->fetch(PDO::FETCH_ASSOC);
+        if ($Resp) {
+            $id = $Resp['id'];
+            setcookie('id', $id, time() + 3600, "/"); // Cookie do id valido por 1 hora
+        } else {
+            echo "<script>alert('Usuario não encontardo')</script>";
+        }
+    } catch (PDOException $e) {
+        echo 'Erro: ', $e->getMessage();
     }
-  } catch (PDOException $e) 
-  {
-    echo 'Erro: ', $e->getMessage();
-  }
 }
 
 // Se o cookie 'id' não estiver vazio
-if (!empty($_COOKIE['id']))
-{
-  $id = $_COOKIE['id'];
-} else
-{
-  $id = '';
+if (!empty($_COOKIE['id'])) {
+    $id = $_COOKIE['id'];
+} else {
+    $id = '';
 }
 
 // Fazendo a querie
@@ -52,17 +47,14 @@ $resultado->execute();
 $linhas = $resultado->fetch(PDO::FETCH_ASSOC);
 
 // Condicional : Se não houver um resultado para o id
-if (!$linhas || $id == '')
-{
-  login();
-}
-else
-{
-  // Atruibuido os resulados
-  $Nome = $linhas['name'];
-  $Saldo = $linhas['balance'];
+if (!$linhas || $id == '') {
+    login();
+} else {
+    // Atruibuido os resulados
+    $nome = $linhas['name'];
+    $saldo = $linhas['balance'];
 
-  echo "<!DOCTYPE html>
+    echo "<!DOCTYPE html>
   <html lang='pt-BR'>
   <head>
       <meta charset='UTF-8'>
@@ -206,8 +198,8 @@ else
       <div class='top-bar'>
           <h1>Banco Digital</h1>
           <div class='account-info'>
-    <p><span>Nome da Conta: $Nome</span></p>
-    <p><span>Saldo:</span> R$ $Saldo</p>
+    <p><span>Nome da Conta: $nome</span></p>
+    <p><span>Saldo:</span> R$ $saldo</p>
           </div>
       </div>
 
@@ -249,12 +241,11 @@ else
 
   </body>
   </html>";
-
 }
 
 function login()
 {
-  echo "<!DOCTYPE html>
+    echo "<!DOCTYPE html>
   <html lang='pt-BR'>
   <head>
       <meta charset='UTF-8'>
@@ -337,6 +328,4 @@ function login()
   </html>";
 }
 
-function dashboard()
-{}
-?>
+function dashboard() {}

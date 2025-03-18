@@ -9,10 +9,10 @@ CREATE TABLE account (
 
 INSERT INTO account(name, balance) VALUES
   ('Dionisio', 20.0),
-  ('Sergio', 500.0),
+  ('Sérgio', 500.0),
   ('Andre', 200.0),
   ('Caio', 1000.0),
-  ('Joao Pedro', 1500.0);
+  ('João Pedro', 1500.0);
 
 SELECT * FROM account;
 
