@@ -1,148 +1,147 @@
 <?php
-// Configurações de erro
+// Error settings
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// Configurações para a conexão com o banco de dados
-$host     = 'localhost';
-$db       = 'bank_exercise';
-$username = 'db';
-$password = '12345';
+// Database connection settings
+$dbHost     = 'localhost';
+$dbName     = 'bank_exercise';
+$dbUsername = 'db';
+$dbPassword = '12345';
 
 try {
-    $conexao = new PDO("mysql:host=$host;dbname=$db;charset=utf8", $username, $password);
-    $conexao->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $connection = new PDO("mysql:host=$dbHost;dbname=$dbName;charset=utf8", $dbUsername, $dbPassword);
+    $connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    echo 'Erro: ' . $e->getMessage();
+    echo 'Error: ' . $e->getMessage();
     exit;
 }
 
-// Tratamento de logout
+// Logout handling
 if (isset($_POST['LogOut'])) {
     setcookie('id', '', time() - 3600, "/");
     header('Location: index.php');
     exit;
 }
 
-// Requisição de autenticação
-if (isset($_POST['username']) && !empty($_POST['username'])) { 
-  $user  = $_POST['username'];
-  auth($conexao, $user);
+// Authentication request
+if (isset($_POST['username']) && !empty($_POST['username'])) {
+    $inputUser = $_POST['username'];
+    authenticate($connection, $inputUser);
 }
 
-// Verifica se o cookie 'id' existe
-$id = !empty($_COOKIE['id']) ? $_COOKIE['id'] : '';
+// Check if the cookie 'id' exists
+$accountId = !empty($_COOKIE['id']) ? $_COOKIE['id'] : '';
 
-// Consulta para obter informações da conta
-$resultado = $conexao->prepare("SELECT name, balance FROM account WHERE id = :id");
-$resultado->execute(['id' => $id]);
-$linha = $resultado->fetch(PDO::FETCH_ASSOC);
-$resultado->closeCursor();
+// Query to get account information
+$stmt = $connection->prepare("SELECT name, balance FROM account WHERE id = :id");
+$stmt->execute(['id' => $accountId]);
+$row = $stmt->fetch(PDO::FETCH_ASSOC);
+$stmt->closeCursor();
 
-// Requisição de transferencia
-if (isset($_POST['accountId']) && isset($_POST['amount']))
-{
-  $dest = $_POST['accountId'];
-  $valor = $_POST['amount'];
-  if (is_numeric($dest) && is_numeric($valor) && $dest != $id) {
-    transferMoney($conexao, $id, $dest, $valor);
-  } else {
-    echo "<script>alert('Valores Invalidos');</script>";
-  }
-}
-
-// Caso não haja resultado ou o id esteja vazio, chama a função de login
-if (!$linha || $id == '') {
-    login();
-} else {
-  $nome  = $linha['name'];
-  $saldo = $linha['balance'];
-  dashboard($conexao, $id, $nome, $saldo);
-
-}
-
-function transferMoney($conexao ,$id, $dest, $amount)
-{
-  echo "<script>console.log('Função transferMoney chamada');</script>";
-  try {
-    $conexao->beginTransaction();
-
-    $conexao->query("SELECT 1")->closeCursor();
-
-    $transaction = $conexao->prepare("CALL TransferMoney(:sender, :receiver, :amount);");
-    $transaction->execute(['sender' => $id, 'receiver' => $dest, 'amount' => $amount]);
-    $transaction->closeCursor();
-    $conexao->commit();
-    echo "<script>alert('Transação conluida!');window.location.href = 'index.php';</script>";
-    exit();
-  } catch (PDOException $e){
-    $conexao->rollBack();
-    echo "<script>alert('Erro: " . addslashes($e->getMessage()) . ");window.location.href = 'index.php';</script>";
-  }
-}
-
-function listTransanction($conexao, $id)
-{
-  try {
-  $query = $conexao->prepare("SELECT sender_id, receiver_id, amount, created_at FROM transaction WHERE sender_id = :id OR receiver_id = :id ORDER BY transaction_id DESC");
-  $query->execute(['id' => $id]);
-
-  if ($query->rowCount() > 0)
-  {
-    while ($resultado = $query->fetch(PDO::FETCH_ASSOC))
-    {
-
-      $amount = $resultado['amount'];
-      $dest = $resultado['receiver_id'];
-      $origem = $resultado['sender_id'];
-      if ($resultado['sender_id'] == $id)
-      {
-        echo "<li>Transação para conta $dest: $amount</li>";
-      } else {
-        echo "<li>Transação da conta $origem: $amount</li>";
-      }
+// Transfer request
+if (isset($_POST['accountId']) && isset($_POST['amount'])) {
+    $targetAccount = $_POST['accountId'];
+    $transferAmount = $_POST['amount'];
+    if (is_numeric($targetAccount) && is_numeric($transferAmount) && $targetAccount != $accountId) {
+        transferMoney($connection, $accountId, $targetAccount, $transferAmount);
+    } else {
+        echo "<script>alert('Invalid values');</script>";
     }
-  } else {
-    echo '<li>Sem transações</li>';
-  }
-  $query->closeCursor();
-  } catch (PDOException $e){
-    echo 'Erro: ' . $e->getMessage();
-  }
 }
 
-function auth($conexao, $user)
+// If no account info is found or the account ID is empty, call the login function
+if (!$row || $accountId == '') {
+    showLogin();
+} else {
+    $accountName = $row['name'];
+    $balance     = $row['balance'];
+    showDashboard($connection, $accountId, $accountName, $balance);
+}
+
+function transferMoney($connection, $senderId, $receiverId, $amount)
+{
+    echo "<script>console.log('transferMoney function called');</script>";
+    try {
+        $connection->beginTransaction();
+
+        // Just a simple query to check connection
+        $connection->query("SELECT 1")->closeCursor();
+
+        $transaction = $connection->prepare("CALL TransferMoney(:sender, :receiver, :amount);");
+        $transaction->execute([
+            'sender'   => $senderId,
+            'receiver' => $receiverId,
+            'amount'   => $amount
+        ]);
+        $transaction->closeCursor();
+        $connection->commit();
+        echo "<script>alert('Transaction completed!');window.location.href = 'index.php';</script>";
+        exit();
+    } catch (PDOException $e) {
+        $connection->rollBack();
+        echo "<script>alert('Error: " . addslashes($e->getMessage()) . "');window.location.href = 'index.php';</script>";
+    }
+}
+
+function listTransactions($connection, $accountId)
 {
     try {
-        $auth = $conexao->prepare("SELECT id FROM account WHERE name = :user");
-        $auth->execute(['user' => $user]);
-        $resp = $auth->fetch(PDO::FETCH_ASSOC);
-        $auth->closeCursor();
-        if ($resp) {
-            $id = $resp['id'];
-            // Cookie válido por 1 hora
+        $query = $connection->prepare("SELECT sender_id, receiver_id, amount, created_at FROM transaction WHERE sender_id = :id OR receiver_id = :id ORDER BY transaction_id DESC");
+        $query->execute(['id' => $accountId]);
+
+        if ($query->rowCount() > 0) {
+            while ($result = $query->fetch(PDO::FETCH_ASSOC)) {
+                $amount   = $result['amount'];
+                $receiver = $result['receiver_id'];
+                $sender   = $result['sender_id'];
+                if ($sender == $accountId) {
+                    echo "<li>Transaction to account $receiver: $amount</li>";
+                } else {
+                    echo "<li>Transaction from account $sender: $amount</li>";
+                }
+            }
+        } else {
+            echo '<li>No transactions</li>';
+        }
+        $query->closeCursor();
+    } catch (PDOException $e) {
+        echo 'Error: ' . $e->getMessage();
+    }
+}
+
+function authenticate($connection, $username)
+{
+    try {
+        $stmt = $connection->prepare("SELECT id FROM account WHERE name = :username");
+        $stmt->execute(['username' => $username]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $stmt->closeCursor();
+        if ($result) {
+            $id = $result['id'];
+            // Cookie valid for 1 hour
             setcookie('id', $id, time() + 3600, "/");
-            header("Location: " . $_SERVER['PHP_SELF']); // Atualiza a página para não ter que reenviar o login para abrir o dashboard
+            header("Location: " . $_SERVER['PHP_SELF']);
             exit();
         } else {
-            echo "<script>alert('Usuário não encontrado');</script>";
+            echo "<script>alert('User not found');</script>";
         }
     } catch (PDOException $e) {
-        echo 'Erro: ' . $e->getMessage();
+        echo 'Error: ' . $e->getMessage();
     }
 }
 
 /**
- * Função que exibe a página de login.
+ * Displays the login page.
  */
-function login() {
+function showLogin() {
     echo "<!DOCTYPE html>
-<html lang='pt-BR'>
+<html lang='en'>
 <head>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Página de Login</title>
+    <title>Login Page</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -206,11 +205,11 @@ function login() {
     <div class='login-container'>
         <h2>Login</h2>
         <form action='index.php' method='post'>
-            <input type='text' name='username' placeholder='Digite seu nome' required>
-            <button type='submit'>Entrar</button>
+            <input type='text' name='username' placeholder='Enter your name' required>
+            <button type='submit'>Sign In</button>
         </form>
         <div class='register-link'>
-            <p>Não tem uma conta? <a href='registro.html'>Registre-se aqui</a>.</p>
+            <p>Don't have an account? <a href='registro.html'>Register here</a>.</p>
         </div>
     </div>
 </body>
@@ -219,15 +218,15 @@ function login() {
 }
 
 /**
- * Função que exibe o dashboard com as informações da conta.
+ * Displays the account dashboard.
  */
-function dashboard($conexao, $id, $nome, $saldo) {
+function showDashboard($connection, $accountId, $accountName, $balance) {
     echo "<!DOCTYPE html>
-<html lang='pt-BR'>
+<html lang='en'>
 <head>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Dashboard Bancário</title>
+    <title>Bank Dashboard</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -359,37 +358,37 @@ function dashboard($conexao, $id, $nome, $saldo) {
 </head>
 <body>
     <div class='top-bar'>
-        <h1>Banco Digital</h1>
+        <h1>Digital Bank</h1>
         <div class='account-info'>
-            <p><span>Nome da Conta:</span> $nome</p>
-            <p><span>Saldo:</span> R$ $saldo</p>
+            <p><span>Account Name:</span> $accountName</p>
+            <p><span>Balance:</span> $ $balance</p>
         </div>
     </div>
     <div class='content'>
-        <h2>Bem-vindo ao seu Dashboard</h2>
-        <p>Aqui você pode gerenciar suas finanças, ver transações recentes e muito mais.</p>
+        <h2>Welcome to your Dashboard</h2>
+        <p>Manage your finances, view recent transactions and more.</p>
         <details>
-            <summary>Realizar Transferência</summary>
+            <summary>Make a Transfer</summary>
             <div class='transfer-form'>
-                <h3>Realizar Transferência</h3>
+                <h3>Make a Transfer</h3>
                 <form action='index.php' method='post'>
-                    <label for='accountId'>ID da Conta Destino:</label>
+                    <label for='accountId'>Target Account ID:</label>
                     <input type='text' id='accountId' name='accountId' required>
-                    <label for='amount'>Valor:</label>
+                    <label for='amount'>Amount:</label>
                     <input type='number' id='amount' name='amount' step='0.01' required>
-                    <button type='submit'>Transferir</button>
+                    <button type='submit'>Transfer</button>
                 </form>
             </div>
         </details>
         <div>
-          <h2>Transações Recentes</h2>
-          <ul>
-          ", listTransanction($conexao, $id), "
-          </ul>
+            <h2>Recent Transactions</h2>
+            <ul>";
+                listTransactions($connection, $accountId);
+    echo "      </ul>
         </div>
         <form class='logout-form' action='index.php' method='post'>
             <input type='hidden' name='LogOut' value='LogOut'>
-            <button type='submit'>Sair</button>
+            <button type='submit'>Logout</button>
         </form>
     </div>
 </body>
