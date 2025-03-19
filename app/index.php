@@ -18,31 +18,6 @@ try {
     exit;
 }
 
-// Requisição de autenticação
-if (isset($_POST['username']) && !empty($_POST['username'])) {
-    $user  = $_POST['username'];
-    $sql   = "SELECT id FROM account WHERE name = :user";
-    
-    try {
-        $auth = $conexao->prepare($sql);
-        $auth->execute(['user' => $user]);
-        $resp = $auth->fetch(PDO::FETCH_ASSOC);
-        
-        if ($resp) {
-            $id = $resp['id'];
-            // Cookie válido por 1 hora
-            setcookie('id', $id, time() + 3600, "/");
-        } else {
-            echo "<script>alert('Usuário não encontrado');</script>";
-        }
-    } catch (PDOException $e) {
-        echo 'Erro: ' . $e->getMessage();
-    }
-}
-
-// Verifica se o cookie 'id' existe
-$id = !empty($_COOKIE['id']) ? $_COOKIE['id'] : '';
-
 // Tratamento de logout
 if (isset($_POST['LogOut'])) {
     setcookie('id', '', time() - 3600, "/");
@@ -50,19 +25,112 @@ if (isset($_POST['LogOut'])) {
     exit;
 }
 
+// Requisição de autenticação
+if (isset($_POST['username']) && !empty($_POST['username'])) { 
+  $user  = $_POST['username'];
+  auth($conexao, $user);
+}
+
+// Verifica se o cookie 'id' existe
+$id = !empty($_COOKIE['id']) ? $_COOKIE['id'] : '';
+
 // Consulta para obter informações da conta
 $resultado = $conexao->prepare("SELECT name, balance FROM account WHERE id = :id");
-$resultado->bindParam(':id', $id);
-$resultado->execute();
+$resultado->execute(['id' => $id]);
 $linha = $resultado->fetch(PDO::FETCH_ASSOC);
+$resultado->closeCursor();
+
+// Requisição de transferencia
+if (isset($_POST['accountId']) && isset($_POST['amount']))
+{
+  $dest = $_POST['accountId'];
+  $valor = $_POST['amount'];
+  if (is_numeric($dest) && is_numeric($valor) && $dest != $id) {
+    transferMoney($conexao, $id, $dest, $valor);
+  } else {
+    echo "<script>alert('Valores Invalidos');</script>";
+  }
+}
 
 // Caso não haja resultado ou o id esteja vazio, chama a função de login
 if (!$linha || $id == '') {
     login();
 } else {
-    $nome  = $linha['name'];
-    $saldo = $linha['balance'];
-    dashboard($nome, $saldo);
+  $nome  = $linha['name'];
+  $saldo = $linha['balance'];
+  dashboard($conexao, $id, $nome, $saldo);
+
+}
+
+function transferMoney($conexao ,$id, $dest, $amount)
+{
+  echo "<script>console.log('Função transferMoney chamada');</script>";
+  try {
+    $conexao->beginTransaction();
+
+    $conexao->query("SELECT 1")->closeCursor();
+
+    $transaction = $conexao->prepare("CALL TransferMoney(:sender, :receiver, :amount);");
+    $transaction->execute(['sender' => $id, 'receiver' => $dest, 'amount' => $amount]);
+    $transaction->closeCursor();
+    $conexao->commit();
+    echo "<script>alert('Transação conluida!');window.location.href = 'index.php';</script>";
+    exit();
+  } catch (PDOException $e){
+    $conexao->rollBack();
+    echo "<script>alert('Erro: " . addslashes($e->getMessage()) . ");window.location.href = 'index.php';</script>";
+  }
+}
+
+function listTransanction($conexao, $id)
+{
+  try {
+  $query = $conexao->prepare("SELECT sender_id, receiver_id, amount, created_at FROM transaction WHERE sender_id = :id OR receiver_id = :id ORDER BY transaction_id DESC");
+  $query->execute(['id' => $id]);
+
+  if ($query->rowCount() > 0)
+  {
+    while ($resultado = $query->fetch(PDO::FETCH_ASSOC))
+    {
+
+      $amount = $resultado['amount'];
+      $dest = $resultado['receiver_id'];
+      $origem = $resultado['sender_id'];
+      if ($resultado['sender_id'] == $id)
+      {
+        echo "<li>Transação para conta $dest: $amount</li>";
+      } else {
+        echo "<li>Transação da conta $origem: $amount</li>";
+      }
+    }
+  } else {
+    echo '<li>Sem transações</li>';
+  }
+  $query->closeCursor();
+  } catch (PDOException $e){
+    echo 'Erro: ' . $e->getMessage();
+  }
+}
+
+function auth($conexao, $user)
+{
+    try {
+        $auth = $conexao->prepare("SELECT id FROM account WHERE name = :user");
+        $auth->execute(['user' => $user]);
+        $resp = $auth->fetch(PDO::FETCH_ASSOC);
+        $auth->closeCursor();
+        if ($resp) {
+            $id = $resp['id'];
+            // Cookie válido por 1 hora
+            setcookie('id', $id, time() + 3600, "/");
+            header("Location: " . $_SERVER['PHP_SELF']); // Atualiza a página para não ter que reenviar o login para abrir o dashboard
+            exit();
+        } else {
+            echo "<script>alert('Usuário não encontrado');</script>";
+        }
+    } catch (PDOException $e) {
+        echo 'Erro: ' . $e->getMessage();
+    }
 }
 
 /**
@@ -152,11 +220,8 @@ function login() {
 
 /**
  * Função que exibe o dashboard com as informações da conta.
- *
- * @param string $nome  Nome da conta
- * @param string $saldo Saldo da conta
  */
-function dashboard($nome, $saldo) {
+function dashboard($conexao, $id, $nome, $saldo) {
     echo "<!DOCTYPE html>
 <html lang='pt-BR'>
 <head>
@@ -307,7 +372,7 @@ function dashboard($nome, $saldo) {
             <summary>Realizar Transferência</summary>
             <div class='transfer-form'>
                 <h3>Realizar Transferência</h3>
-                <form action='transaccion.php' method='post'>
+                <form action='index.php' method='post'>
                     <label for='accountId'>ID da Conta Destino:</label>
                     <input type='text' id='accountId' name='accountId' required>
                     <label for='amount'>Valor:</label>
@@ -317,12 +382,10 @@ function dashboard($nome, $saldo) {
             </div>
         </details>
         <div>
-            <h2>Transações Recentes</h2>
-            <ul>
-                <li>Transferência para Maria - R$ 200,00</li>
-                <li>Depósito - R$ 1.000,00</li>
-                <li>Pagamento de Conta - R$ 150,00</li>
-            </ul>
+          <h2>Transações Recentes</h2>
+          <ul>
+          ", listTransanction($conexao, $id), "
+          </ul>
         </div>
         <form class='logout-form' action='index.php' method='post'>
             <input type='hidden' name='LogOut' value='LogOut'>
