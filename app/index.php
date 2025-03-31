@@ -19,7 +19,7 @@ try {
 }
 
 // Logout handling
-if (isset($_POST['LogOut'])) {
+if (isset($_GET['logout'])) {
     setcookie('id', '', time() - 3600, "/");
     header('Location: index.php');
     exit;
@@ -134,10 +134,21 @@ function listTransactions($connection, $accountId)
                 $amount   = $result['amount'];
                 $receiver = $result['receiver_id'];
                 $sender   = $result['sender_id'];
+                $time     = $result['created_at'];
                 if ($sender == $accountId) {
-                    echo "<li>Transaction to account $receiver: $amount</li>";
+                    echo "<li class='transaction-item'>
+                    <div>
+                        <h4>Transferência Enviada</h4>
+                        <small>$time - Conta: $receiver</small>
+                    </div>
+                    <span class='amount negative'>- R$ $amount</span>";
                 } else {
-                    echo "<li>Transaction from account $sender: $amount</li>";
+                    echo "<li class='transaction-item'>
+                    <div>
+                        <h4>Transferência Enviada</h4>
+                        <small>$time - Conta: $sender</small>
+                    </div>
+                    <span class='amount positive'>+ R$ $amount</span>";
                 }
             }
         } else {
@@ -193,81 +204,207 @@ function register($connection, $username, $password)
  */
 function showLogin() {
     echo "<!DOCTYPE html>
-<html lang='en'>
+<html lang='pt-BR'>
 <head>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Login Page</title>
+    <title>Login - PurpleBank</title>
+    <link href='https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap' rel='stylesheet'>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        :root {
+            --primary: #8A2BE2;
+            --secondary: #4B0082;
+            --background: #0a0615;
+        }
+
+        * {
             margin: 0;
             padding: 0;
-            background-color: #f4f4f9;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: var(--background);
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
         }
+
+        .background-blur {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            animation: rotate 20s linear infinite;
+            filter: blur(80px);
+            opacity: 0.1;
+        }
+
         .login-container {
-            background-color: #ffffff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            padding: 2.5rem;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
             width: 100%;
-            max-width: 400px;
+            max-width: 440px;
+            margin: 0 1rem;
+            position: relative;
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.25);
+        }
+
+        .logo {
             text-align: center;
+            margin-bottom: 2.5rem;
         }
-        .login-container h2 {
-            margin-bottom: 20px;
-            color: #333;
+
+        .logo img {
+            width: 80px;
+            filter: drop-shadow(0 0 20px var(--primary));
         }
-        .login-container input {
+
+        .form-group {
+            margin-bottom: 2rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.75rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 400;
+            font-size: 0.9rem;
+        }
+
+        input {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-        .login-container button {
-            background-color: #007bff;
+            padding: 14px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
             color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
+            font-size: 15px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 3px rgba(138, 43, 226, 0.15);
+        }
+
+        button {
             width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
-        .login-container button:hover {
-            background-color: #0056b3;
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(138, 43, 226, 0.3);
         }
-        .register-link {
-            margin-top: 15px;
-            font-size: 14px;
-            color: #555;
+
+        .additional-options {
+            margin-top: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .register-link a {
-            color: #007bff;
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .remember-me input {
+            width: auto;
+        }
+
+        .forgot-password a {
+            color: rgba(255, 255, 255, 0.7);
             text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.3s ease;
         }
-        .register-link a:hover {
-            text-decoration: underline;
+
+        .forgot-password a:hover {
+            color: var(--primary);
+        }
+
+        .security-info {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 1.5rem;
+                border-radius: 16px;
+            }
+            
+            input, button {
+                padding: 12px 16px;
+            }
         }
     </style>
 </head>
 <body>
+    <div class='background-blur'></div>
+    
     <div class='login-container'>
-        <h2>Login</h2>
-        <form action='index.php' method='post'>
-            <input type='text' name='username' placeholder='Enter your name' required>
-            <input type='password' name='password' placeholder='Enter your password' required>
-            <button type='login'>Sign In</button>
-        </form>
-        <div class='register-link'>
-            <p>Don't have an account? <a href='index.php?register'>Register here</a>.</p>
+        <div class='logo'>
+            <img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2Ij48cGF0aCBkPSJNMjI0LDEyOGE5Ni45LDk2LjksMCwwLDEtMTYuNzMsNTMuNjZMMTI4LDEyOCw5NS4zMiw2NC42NEE5Niw5NiwwLDEsMSwyMjQsMTI4WiIgZmlsbD0iIzhBMkJFMiIvPjxwYXRoIGQ9Ik0xODguNjcsMTg0YTI0LDI0LDAsMSwxLTI0LTI0QTI0LDI0LDAsMCwxLDE4OC42NywxODRaIiBmaWxsPSIjNEIwMDgyIi8+PC9zdmc+' alt='PurpleBank'>
         </div>
+
+        <form action='index.php' method='post'>
+            <div class='form-group'>
+                <label for='username'>Nome</label>
+                <input type='text' name='username' placeholder='exemplo@purplebank.com'>
+            </div>
+
+            <div class='form-group'>
+                <label for='password'>Senha</label>
+                <input type='password' name='password' placeholder='••••••••'>
+            </div>
+
+            <div class='additional-options'>
+                <div class='remember-me'>
+                    <input type='checkbox' id='remember'>
+                    <label for='remember'>Lembrar-me</label>
+                </div>
+                <div class='forgot-password'>
+                    <a href='index.php?register'>Crie uma conta</a>
+                </div>
+            </div>
+
+            <button type='submit'>ACESSAR CONTA</button>
+
+            <div class='security-info'>
+                <p>Segurança SSL 256-bit • Autenticação de dois fatores</p>
+            </div>
+        </form>
     </div>
 </body>
 </html>";
@@ -276,81 +413,188 @@ function showLogin() {
 
 function showRegister() {
     echo "<!DOCTYPE html>
-<html lang='en'>
+<html lang='pt-BR'>
 <head>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Login Page</title>
+    <title>Cadastro - PurpleBank</title>
+    <link href='https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap' rel='stylesheet'>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        :root {
+            --primary: #8A2BE2;
+            --secondary: #4B0082;
+            --background: #0a0615;
+        }
+
+        * {
             margin: 0;
             padding: 0;
-            background-color: #f4f4f9;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: var(--background);
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
         }
-        .login-container {
-            background-color: #ffffff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+
+        .background-blur {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            animation: rotate 20s linear infinite;
+            filter: blur(80px);
+            opacity: 0.1;
+        }
+
+        .register-container {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            padding: 2.5rem;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
             width: 100%;
-            max-width: 400px;
+            max-width: 440px;
+            margin: 0 1rem;
+            position: relative;
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.25);
+        }
+
+        .logo {
             text-align: center;
+            margin-bottom: 2.5rem;
         }
-        .login-container h2 {
-            margin-bottom: 20px;
-            color: #333;
+
+        .logo img {
+            width: 80px;
+            filter: drop-shadow(0 0 20px var(--primary));
         }
-        .login-container input {
+
+        .form-group {
+            margin-bottom: 2rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.75rem;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 400;
+            font-size: 0.9rem;
+        }
+
+        input {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-        .login-container button {
-            background-color: #007bff;
+            padding: 14px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
             color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
+            font-size: 15px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 3px rgba(138, 43, 226, 0.15);
+        }
+
+        button {
             width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
-        .login-container button:hover {
-            background-color: #0056b3;
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(138, 43, 226, 0.3);
         }
-        .register-link {
-            margin-top: 15px;
-            font-size: 14px;
-            color: #555;
+
+        .login-link {
+            text-align: center;
+            margin-top: 2rem;
         }
-        .register-link a {
-            color: #007bff;
+
+        .login-link a {
+            color: var(--primary);
             text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.3s ease;
         }
-        .register-link a:hover {
-            text-decoration: underline;
+
+        .login-link a:hover {
+            opacity: 0.8;
+        }
+
+        .security-info {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 480px) {
+            .register-container {
+                padding: 1.5rem;
+                border-radius: 16px;
+            }
+            
+            input, button {
+                padding: 12px 16px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class='login-container'>
-        <h2>Register</h2>
-        <form action='index.php' method='post'>
-            <input type='text' name='registro' placeholder='Enter your name' required>
-            <input type='password' name='password' placeholder='Enter your password' required>
-            <button type='login'>Registre-see</button>
-        </form>
-        <div class='register-link'>
-            <p>Ja tem uma conta? <a href='index.php'>Logue aqui!</a>.</p>
+    <div class='background-blur'></div>
+    
+    <div class='register-container'>
+        <div class='logo'>
+            <img src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2Ij48cGF0aCBkPSJNMjI0LDEyOGE5Ni45LDk2LjksMCwwLDEtMTYuNzMsNTMuNjZMMTI4LDEyOCw5NS4zMiw2NC42NEE5Niw5NiwwLDEsMSwyMjQsMTI4WiIgZmlsbD0iIzhBMkJFMiIvPjxwYXRoIGQ9Ik0xODguNjcsMTg0YTI0LDI0LDAsMSwxLTI0LTI0QTI0LDI0LDAsMCwxLDE4OC42NywxODRaIiBmaWxsPSIjNEIwMDgyIi8+PC9zdmc+' alt='PurpleBank'>
         </div>
+
+        <form action='index.php' method='post'>
+            <div class='form-group'>
+                <label for='name'>Nome completo</label>
+                <input type='text' name='registro' placeholder='Digite seu nome completo'>
+            </div>
+
+            <div class='form-group'>
+                <label for='password'>Crie sua senha</label>
+                <input type='password' name='password' placeholder='••••••••'>
+            </div>
+
+            <button type='submit'>CRIAR CONTA</button>
+
+            <div class='login-link'>
+                <p>Já tem uma conta? <a href='#'>Faça login</a></p>
+            </div>
+
+            <div class='security-info'>
+                <p>Seus dados estão protegidos com criptografia de ponta</p>
+            </div>
+        </form>
     </div>
 </body>
 </html>";
@@ -362,174 +606,258 @@ function showRegister() {
  */
 function showDashboard($connection, $accountId, $accountName, $balance, $id) {
     echo "<!DOCTYPE html>
-<html lang='en'>
+<html lang='pt-BR'>
 <head>
     <meta charset='UTF-8'>
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Bank Dashboard</title>
+    <title>Dashboard - PurpleBank</title>
+    <link href='https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap' rel='stylesheet'>
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css'>
     <style>
+        :root {
+            --primary: #8A2BE2;
+            --secondary: #4B0082;
+            --background: #160028;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f9;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            background: var(--background);
             min-height: 100vh;
-        }
-        .top-bar {
-            background-color: #007bff;
             color: white;
-            padding: 15px 20px;
-            width: 100%;
-            text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        .top-bar h1 {
-            margin: 0;
-            font-size: 24px;
+
+        .user-header {
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            margin-bottom: 2rem;
         }
+
+        .user-info h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
         .account-info {
-            text-align: center;
-            margin-top: 10px;
+            opacity: 0.8;
+            font-size: 0.9rem;
         }
-        .account-info p {
-            margin: 5px 0;
-            font-size: 16px;
+
+        .main-content {
+            padding: 0 2rem 2rem;
         }
-        .account-info p span {
-            font-weight: bold;
+
+        .balance-card {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(138, 43, 226, 0.2);
         }
-        .content {
-            background-color: #ffffff;
-            padding: 20px;
+
+        .transactions {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        .transactions h3 {
+            margin-bottom: 1.5rem;
+            font-size: 1.2rem;
+        }
+
+        .transaction-list {
+            list-style: none;
+        }
+
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+        }
+
+        .transaction-item div {
+            flex: 2;
+        }
+
+        .amount {
+            flex: 1;
+            text-align: right;
+            font-weight: 500;
+        }
+
+        .positive { color: #00ff88; }
+        .negative { color: #ff4444; }
+
+        .transaction-panel {
+            position: fixed;
+            right: -100%;
+            top: 0;
+            width: 400px;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            padding: 2rem;
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            transition: right 0.3s ease;
+        }
+
+        #transaction-panel:target {
+            right: 0;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            width: 90%;
-            max-width: 600px;
-            margin-top: 20px;
+            color: white;
+            margin-top: 0.5rem;
         }
-        .content h2 {
-            color: #333;
-            text-align: center;
-        }
-        .content p {
-            color: #555;
-            text-align: center;
-        }
-        .transfer-form {
-            background-color: #ffffff;
-            padding: 20px;
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            padding: 12px 24px;
+            border: none;
             border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            margin-top: 20px;
-        }
-        .transfer-form label {
-            display: block;
-            margin-bottom: 10px;
-            font-weight: bold;
-            color: #333;
-        }
-        .transfer-form input {
+            cursor: pointer;
             width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 16px;
         }
-        .transfer-form button {
-            background-color: #007bff;
+
+        .new-transaction-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--primary);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 24px rgba(138, 43, 226, 0.3);
+            transition: transform 0.3s ease;
+            text-decoration: none;
             color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            width: 100%;
         }
-        .transfer-form button:hover {
-            background-color: #0056b3;
-        }
-        details {
-            margin-bottom: 20px;
-        }
-        summary {
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            text-align: center;
-        }
-        summary:hover {
-            background-color: #e9ecef;
-        }
-        ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        ul li {
-            background-color: #f8f9fa;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-        .logout-form button {
-            background-color: #dc3545;
+
+        .close-panel {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
             color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            width: 100%;
-            margin-top: 10px;
+            text-decoration: none;
+            font-size: 1.5rem;
         }
-        .logout-form button:hover {
-            background-color: #c82333;
+            
+        .user-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            margin-bottom: 2rem;
+        }
+
+        .logout-btn {
+            background: rgba(138, 43, 226, 0.2);
+            color: var(--primary);
+            padding: 8px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .logout-btn i {
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 480px) {
+            .logout-btn span {
+                display: none;
+            }
+            
+            .logout-btn {
+                padding: 8px 12px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class='top-bar'>
-        <h1>Digital Bank</h1>
-        <div class='account-info'>
-            <p><span>Account Name:</span> $accountName</p>
-            <p><span>Balance:</span> $ $balance</p>
-            <p><span>Id:</span> $id</p>
+    <div class='user-header'>
+        <div class='user-info'>
+            <h1>$accountName</h1>
+            <p class='account-info'>Conta: $id</p>
+            <a href='index.php?logout' class='logout-btn'>
+            <i class='fas fa-sign-out-alt'></i>
+            <span>Sair</span>
+            </a>
         </div>
     </div>
-    <div class='content'>
-        <h2>Welcome to your Dashboard</h2>
-        <p>Manage your finances, view recent transactions and more.</p>
-        <details>
-            <summary>Make a Transfer</summary>
-            <div class='transfer-form'>
-                <h3>Make a Transfer</h3>
-                <form action='index.php' method='post'>
-                    <label for='accountId'>Target Account ID:</label>
-                    <input type='text' id='accountId' name='accountId' required>
-                    <label for='amount'>Amount:</label>
-                    <input type='number' id='amount' name='amount' step='0.01' required>
-                    <button type='submit'>Transfer</button>
-                </form>
-            </div>
-        </details>
-        <div>
-            <h2>Recent Transactions</h2>
-            <ul>";
-                listTransactions($connection, $accountId);
-    echo "      </ul>
+
+    <div class='main-content'>
+        <div class='balance-card'>
+            <p class='balance-label'>Saldo Disponível</p>
+            <h2 class='balance-amount'>R$ $balance</h2>
         </div>
-        <form class='logout-form' action='index.php' method='post'>
-            <input type='hidden' name='LogOut' value='LogOut'>
-            <button type='submit'>Logout</button>
+
+        <div class='transactions'>
+            <h3>Últimas Transações</h3>
+            <ul class='transaction-list'>";
+            listTransactions($connection, $id);
+            echo "</ul>
+        </div>
+    </div>
+
+    <a href='#transaction-panel' class='new-transaction-btn'>
+        <i class='fas fa-plus'></i>
+    </a>
+
+    <div id='transaction-panel' class='transaction-panel'>
+        <a href='#' class='close-panel'>&times;</a>
+        <h3>Nova Transação</h3>
+        <form action='index.php' method='post'>
+            <div class='form-group'>
+                <label>Valor</label>
+                <input type='number' name='amount' class='form-control' placeholder='R$ 0,00' step='0.01' required>
+            </div>
+
+            <div class='form-group'>
+                <label>Destinatário</label>
+                <input type='text' name='accountId' class='form-control' placeholder='CPF ou Chave Pix' required>
+            </div>
+
+            <div class='form-group'>
+                <label>Descrição</label>
+                <textarea class='form-control' rows='3'></textarea>
+            </div>
+
+            <button type='submit' class='btn'>Confirmar Transação</button>
         </form>
     </div>
 </body>
