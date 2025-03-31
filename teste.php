@@ -84,42 +84,22 @@ function transferMoney($connection, $senderId, $receiverId, $amount)
     try {
         $connection->beginTransaction();
 
-        // Verificar saldo do remetente
-        $stmt = $connection->prepare("SELECT balance FROM account WHERE id = ?");
-        $stmt->execute([$senderId]);
-        $senderBalance = $stmt->fetchColumn();
+        // Just a simple query to check connection
+        $connection->query("SELECT 1")->closeCursor();
 
-        // Verificar se a conta existe
-        if ($senderBalance === false) {
-            throw new Exception("Conta do remetente não encontrada");
-        }
-
-        // Validar saldo suficiente
-        if ($senderBalance < $amount) {
-            $connection->rollBack();
-            echo "<script>alert('Saldo insuficiente');window.location.href = 'index.php';</script>";
-            exit();
-        }
-
-        // Atualizar contas
-        $stmt = $connection->prepare("UPDATE account SET balance = balance - ? WHERE id = ?");
-        $stmt->execute([$amount, $senderId]);
-        
-        $stmt = $connection->prepare("UPDATE account SET balance = balance + ? WHERE id = ?");
-        $stmt->execute([$amount, $receiverId]);
-
-        // Registrar transação
-        $stmt = $connection->prepare("INSERT INTO transaction (sender_id, receiver_id, amount) VALUES (?, ?, ?)");
-        $stmt->execute([$senderId, $receiverId, $amount]);
-
+        $transaction = $connection->prepare("CALL TransferMoney(:sender, :receiver, :amount);");
+        $transaction->execute([
+            'sender'   => $senderId,
+            'receiver' => $receiverId,
+            'amount'   => $amount
+        ]);
+        $transaction->closeCursor();
         $connection->commit();
-        echo "<script>alert('Transferência realizada com sucesso!');window.location.href = 'index.php';</script>";
+        echo "<script>alert('Transaction completed!');window.location.href = 'index.php';</script>";
         exit();
-
-    } catch (Exception $e) { // Alterado para capturar todas as exceções
+    } catch (PDOException $e) {
         $connection->rollBack();
-        echo "<script>alert('Erro: " . addslashes($e->getMessage()) . "');window.location.href = 'index.php';</script>";
-        exit();
+        echo "<script>alert('Error: " . addslashes($e->getMessage()) . "');window.location.href = 'index.php';</script>";
     }
 }
 

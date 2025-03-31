@@ -1,6 +1,3 @@
-CREATE DATABASE bank_exercise;
-USE bank_exercise;
-
 CREATE TABLE account (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
