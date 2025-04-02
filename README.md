@@ -1,44 +1,43 @@
-# Bank Transaction System - Relational Database Transaction Control
+# Sistema de Transações Bancárias - Controle de Transações em Banco de Dados Relacional
 
-## Overview
+## Visão Geral
 
-This project demonstrates the concepts of **transactional systems** and **transaction control** in relational databases, using MySQL as the database management system. The system simulates money transfers between bank accounts, allowing for transactions to be executed with proper controls, such as ensuring that money transfers happen atomically and that potential deadlocks are handled. This project aims to showcase how transactions in relational databases work and how to manage concurrent operations.
+Este projeto demonstra os conceitos de **sistemas transacionais** e **controle de transações** em bancos de dados relacionais, utilizando o MySQL como sistema de gerenciamento de banco de dados. O sistema simula transferências de dinheiro entre contas bancárias, permitindo que as transações sejam executadas com os devidos controles, como a garantia de que as transferências ocorram de forma atômica e que possíveis deadlocks sejam tratados. O objetivo deste projeto é mostrar como as transações em bancos de dados relacionais funcionam e como gerenciar operações concorrentes.
 
-## Key Concepts
+## Conceitos Principais
 
-### Transaction Management
-A **transaction** is a sequence of operations performed as a single logical unit of work. In this project, transactions are used to transfer money between bank accounts while ensuring the following properties:
-- **Atomicity**: A transaction is either fully completed or not executed at all.
-- **Consistency**: The database transitions from one valid state to another, ensuring all integrity constraints are met.
-- **Isolation**: Transactions are isolated from each other, meaning the execution of one transaction does not affect the execution of another.
-- **Durability**: Once a transaction is committed, the changes are permanent, even in the event of a system failure.
+### Gerenciamento de Transações
+Uma **transação** é uma sequência de operações realizadas como uma única unidade lógica de trabalho. Neste projeto, as transações são usadas para transferir dinheiro entre contas bancárias, garantindo as seguintes propriedades:
+- **Atomicidade**: Uma transação é ou totalmente concluída ou não é executada.
+- **Consistência**: O banco de dados transita de um estado válido para outro, assegurando que todas as restrições de integridade sejam atendidas.
+- **Isolamento**: As transações são isoladas umas das outras, ou seja, a execução de uma transação não afeta a execução de outra.
+- **Durabilidade**: Uma vez que uma transação é confirmada (commit), as alterações se tornam permanentes, mesmo em caso de falha do sistema.
 
-### Transaction Control in MySQL
-The project implements various MySQL techniques for handling transactions:
-- **Locking**: To prevent data corruption, we use `SELECT ... FOR UPDATE` to lock the necessary rows during a transaction, ensuring that no other transactions can interfere with the operation.
-- **Deadlock Prevention**: A scenario is created where two transactions can cause a deadlock by locking the same resources in different orders. This demonstrates how deadlocks can occur and how they are automatically detected and resolved by MySQL.
+### Controle de Transações no MySQL
+O projeto implementa várias técnicas do MySQL para lidar com transações:
+- **Locking (Bloqueio)**: Para evitar a corrupção de dados, utiliza-se `SELECT ... FOR UPDATE` para bloquear as linhas necessárias durante uma transação, garantindo que nenhuma outra transação interfira na operação.
+- **Prevenção de Deadlock**: É criado um cenário onde duas transações podem causar um deadlock ao bloquearem os mesmos recursos em ordens diferentes. Isso demonstra como os deadlocks podem ocorrer e como são detectados e resolvidos automaticamente pelo MySQL.
 
-### Transaction Example: Money Transfer
-In this project, a stored procedure is implemented to simulate the process of transferring money from one account to another. The procedure includes the following steps:
-1. Check if the sender has sufficient funds.
-2. Subtract the transfer amount from the sender's account.
-3. Add the transfer amount to the receiver's account.
-4. Log the transaction in a transaction table.
-5. Handle any errors or edge cases, such as insufficient funds.
+### Exemplo de Transação: Transferência de Dinheiro
+Neste projeto, é implementada uma procedure para simular o processo de transferência de dinheiro de uma conta para outra. A procedure inclui os seguintes passos:
+1. Verificar se o remetente possui fundos suficientes.
+2. Subtrair o valor da transferência da conta do remetente.
+3. Adicionar o valor da transferência à conta do destinatário.
+4. Registrar a transação em uma tabela de transações.
+5. Tratar quaisquer erros ou casos extremos, como fundos insuficientes.
 
-### Database Schema
-The project uses two tables to simulate the bank's accounts and transactions:
-- **account**: Stores account details such as account ID, account holder name, and balance.
-- **transaction**: Logs each money transfer, including the sender's ID, receiver's ID, amount transferred, and timestamp.
+### Esquema do Banco de Dados
+O projeto utiliza duas tabelas para simular as contas e as transações do banco:
+- **account**: Armazena detalhes da conta, como ID da conta, nome do titular da conta e saldo.
+- **transaction**: Registra cada transferência de dinheiro, incluindo o ID do remetente, o ID do destinatário, o valor transferido e a data/hora da transação.
 
-### Deadlock Scenario
-A deadlock can occur when two transactions attempt to update the same records in reverse order. This project demonstrates how deadlocks can happen and how MySQL handles them by rolling back one of the transactions, allowing the other to proceed.
+### Cenário de Deadlock
+Um deadlock pode ocorrer quando duas transações tentam atualizar os mesmos registros em ordem inversa. Este projeto demonstra como os deadlocks podem acontecer e como o MySQL os trata, revertendo (rollback) uma das transações e permitindo que a outra prossiga.
 
-## Technologies Used
-- **MySQL**: For the relational database management system.
-- **PHP**: For the graphical user interface (GUI) to interact with the database and visualize the transactions.
-- **HTML/CSS**: For building the front-end interface.
-- **JavaScript**: For dynamic features in the GUI.
+## Tecnologias Utilizadas
+- **MySQL**: Para o sistema de gerenciamento de banco de dados relacional.
+- **PHP**: Para a interface gráfica (GUI) que interage com o banco de dados e visualiza as transações.
+- **HTML/CSS**: Para a construção da interface front-end.
+- **JavaScript**: Para os recursos dinâmicos na interface gráfica.
 
-  
-The PHP interface will connect to the MySQL database and execute the transaction procedures, making it easier to demonstrate the system during the presentation.
+A interface em PHP se conectará ao banco de dados MySQL e executará as procedures de transação, facilitando a demonstração do sistema durante a apresentação.

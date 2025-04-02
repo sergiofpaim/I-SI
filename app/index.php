@@ -1,15 +1,15 @@
 <?php
-// Error settings
+// Controle de erros para o PHP
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// Database connection settings
+// Variaveis ficticias para a base de dados
 $dbHost     = 'localhost';
 $dbName     = 'bank_exercise';
 $dbUsername = 'db';
 $dbPassword = '12345';
-
+// Processo de conexão com a base de dados (MySQL)
 try {
     $connection = new PDO("mysql:host=$dbHost;dbname=$dbName;charset=utf8", $dbUsername, $dbPassword);
     $connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -17,6 +17,18 @@ try {
     echo 'Error: ' . $e->getMessage();
     exit;
 }
+
+/* ------------------------------
+  Estrutura a seguir:
+  1 - Controle para Logout
+  2 - Mostrar tela de Registro
+  3 - Chamada para o Registro
+  4 - Chamada para a Autenticação
+  5 - Controle de cookies
+  6 - Controle Login/Dashboard
+  
+  Funções a partir da linha 93
+ ------------------------------- */
 
 // Logout handling
 if (isset($_GET['logout'])) {
@@ -30,7 +42,7 @@ if (isset($_GET['register'])) {
     showRegister();
 }
 
-// Chama o registro
+// Chamada para o registro
 if (isset($_POST['registro']) && !empty($_POST['registro'])) {
   if (empty($_POST['password'])) {
     echo "<script>alert('Insira a senha');</script>";
@@ -42,23 +54,21 @@ if (isset($_POST['registro']) && !empty($_POST['registro'])) {
   }
 }
 
-// Authentication request
+// Chamada para a Autenticação
 if (isset($_POST['username']) && !empty($_POST['username'])) {
   $inputUser = $_POST['username'];
   $Password = sha1($_POST['password']);
     authenticate($connection, $inputUser, $Password);
 }
 
-// Check if the cookie 'id' exists
+// Controle de cookies para a sessão
 $accountId = !empty($_COOKIE['id']) ? $_COOKIE['id'] : '';
-
-// Query to get account information
 $stmt = $connection->prepare("SELECT name, balance FROM account WHERE id = :id");
 $stmt->execute(['id' => $accountId]);
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
 $stmt->closeCursor();
 
-// Transfer request
+// Chamada para a Transferencia
 if (isset($_POST['accountId']) && isset($_POST['amount'])) {
     $targetAccount = $_POST['accountId'];
     $transferAmount = $_POST['amount'];
@@ -69,7 +79,7 @@ if (isset($_POST['accountId']) && isset($_POST['amount'])) {
     }
 }
 
-// If no account info is found or the account ID is empty, call the login function
+// Controle de Login/Dashboard
 if (!$row || $accountId == '') {
     showLogin();
 } else {
@@ -79,6 +89,11 @@ if (!$row || $accountId == '') {
     showDashboard($connection, $accountId, $accountName, $balance, $id);
 }
 
+/*
+ --- FUNÇÕES ABAIXC ---
+ */
+
+// Função de Transferencia
 function transferMoney($connection, $senderId, $receiverId, $amount)
 {
     try {
@@ -123,6 +138,7 @@ function transferMoney($connection, $senderId, $receiverId, $amount)
     }
 }
 
+// Função para listar as transações
 function listTransactions($connection, $accountId)
 {
     try {
@@ -199,9 +215,7 @@ function register($connection, $username, $password)
   }
 }
 
-/**
- * Displays the login page.
- */
+// Função que mostra a tela de login
 function showLogin() {
     echo "<!DOCTYPE html>
 <html lang='pt-BR'>
@@ -411,6 +425,7 @@ function showLogin() {
     exit;
 }
 
+// Função que Mostra a tela de Registro
 function showRegister() {
     echo "<!DOCTYPE html>
 <html lang='pt-BR'>
@@ -601,9 +616,7 @@ function showRegister() {
     exit;
 }
 
-/**
- * Displays the account dashboard.
- */
+// Função que mostra a tela de Dashboard
 function showDashboard($connection, $accountId, $accountName, $balance, $id) {
     echo "<!DOCTYPE html>
 <html lang='pt-BR'>
